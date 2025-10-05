@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Password Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: #fff;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      max-width: 450px;
+      width: 100%;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .password-box {
+      display: flex;
+      margin-bottom: 15px;
+    }
+    #password {
+      flex: 1;
+      padding: 10px;
+      font-size: 1.1em;
+      border: 1px solid #ccc;
+      border-radius: 5px 0 0 5px;
+      overflow-x: auto;
+    }
+    .btn {
+      padding: 10px 15px;
+      cursor: pointer;
+      border: none;
+      color: #fff;
+      border-radius: 0 5px 5px 0;
+      background: #007BFF;
+    }
+    .btn:hover {
+      background: #0056b3;
+    }
+    .options label {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .options input[type="number"],
+    .options input[type="range"] {
+      margin-left: auto;
+      margin-right: 0;
+    }
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 15px;
+    }
+    .actions button {
+      flex: 1;
+      margin: 0 5px;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      background: #28a745;
+      color: white;
+      cursor: pointer;
+    }
+    .actions button:hover {
+      background: #218838;
+    }
+    .strength {
+      margin-top: 15px;
+      text-align: center;
+    }
+    .strength span {
+      font-weight: bold;
+    }
+    .small-btn {
+      padding: 5px 10px;
+      font-size: 0.8em;
+      margin-left: 5px;
+      background: #6c757d;
+      border-radius: 3px;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+    }
+    .small-btn:hover {
+      background: #5a6268;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Password Generator</h2>
+
+    <!-- Password Display -->
+    <div class="password-box">
+      <div id="password"></div>
+      <button id="copyBtn" class="btn">Copy</button>
+    </div>
+
+    <!-- Options -->
+    <div class="options">
+      <label>
+        Length:
+        <input type="number" id="length" min="4" max="64" value="12">
+        <input type="range" id="lengthRange" min="4" max="64" value="12">
+      </label>
+      <label><input type="checkbox" id="lowercase" checked> Include Lowercase</label>
+      <label><input type="checkbox" id="uppercase" checked> Include Uppercase</label>
+      <label><input type="checkbox" id="numbers" checked> Include Numbers</label>
+      <label><input type="checkbox" id="symbols"> Include Symbols</label>
+    </div>
+
+    <!-- Main Actions -->
+    <div class="actions">
+      <button id="generateBtn">Generate Password</button>
+      <button id="shuffleBtn">Shuffle</button>
+      <button id="downloadBtn">Download</button>
+      <button id="saveBtn">Save</button>
+    </div>
+
+    <!-- Strength Display -->
+    <div class="strength">
+      Strength: <span id="strengthValue">N/A</span><br>
+      Entropy: <span id="entropyValue">0</span> bits
+    </div>
+
+    <!-- Preset Lengths -->
+    <div style="text-align:center; margin-top:10px;">
+      Quick Presets:
+      <button class="small-btn" data-len="12">12</button>
+      <button class="small-btn" data-len="16">16</button>
+      <button class="small-btn" data-len="24">24</button>
+      <button class="small-btn" data-len="64">64</button>
+    </div>
+  </div>
+
+  <script>
+    const passwordEl = document.getElementById('password');
+    const copyBtn = document.getElementById('copyBtn');
+    const generateBtn = document.getElementById('generateBtn');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const saveBtn = document.getElementById('saveBtn');
+
+    const lengthEl = document.getElementById('length');
+    const lengthRange = document.getElementById('lengthRange');
+    const lowercaseEl = document.getElementById('lowercase');
+    const uppercaseEl = document.getElementById('uppercase');
+    const numbersEl = document.getElementById('numbers');
+    const symbolsEl = document.getElementById('symbols');
+    const strengthValue = document.getElementById('strengthValue');
+    const entropyValue = document.getElementById('entropyValue');
+
+    const presets = document.querySelectorAll('.small-btn[data-len]');
+
+    const lowercaseChars = "abcdefghijklmnopqrstuvwxyz";
+    const uppercaseChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const numberChars = "0123456789";
+    const symbolChars = "!@#$%^&*()_+[]{}|;:,.<>?";
+
+    function generatePassword(length, useLower, useUpper, useNum, useSym) {
+      let chars = "";
+      if (useLower) chars += lowercaseChars;
+      if (useUpper) chars += uppercaseChars;
+      if (useNum) chars += numberChars;
+      if (useSym) chars += symbolChars;
+
+      if (!chars) return "";
+
+      let password = "";
+      for (let i = 0; i < length; i++) {
+        const idx = Math.floor(Math.random() * chars.length);
+        password += chars[idx];
+      }
+      return password;
+    }
+
+    function calculateEntropy(password, poolSize) {
+      if (!password) return 0;
+      return Math.round(password.length * Math.log2(poolSize));
+    }
+
+    function getStrength(bits) {
+      if (bits >= 128) return "Very strong";
+      if (bits >= 80) return "Strong";
+      if (bits >= 60) return "Moderate";
+      if (bits >= 40) return "Weak";
+      return "Very weak";
+    }
+
+    function updateUI(password) {
+      passwordEl.textContent = password;
+
+      let poolSize = 0;
+      if (lowercaseEl.checked) poolSize += lowercaseChars.length;
+      if (uppercaseEl.checked) poolSize += uppercaseChars.length;
+      if (numbersEl.checked) poolSize += numberChars.length;
+      if (symbolsEl.checked) poolSize += symbolChars.length;
+
+      const bits = calculateEntropy(password, poolSize);
+      entropyValue.textContent = bits;
+      strengthValue.textContent = getStrength(bits);
+    }
+
+    generateBtn.addEventListener('click', () => {
+      const length = parseInt(lengthEl.value);
+      const password = generatePassword(
+        length,
+        lowercaseEl.checked,
+        uppercaseEl.checked,
+        numbersEl.checked,
+        symbolsEl.checked
+      );
+      updateUI(password);
+    });
+
+    copyBtn.addEventListener('click', () => {
+      const text = passwordEl.textContent;
+      if (!text) return alert("No password to copy!");
+      navigator.clipboard.writeText(text);
+      alert("Copied to clipboard!");
+    });
+
+    shuffleBtn.addEventListener('click', () => {
+      let pwd = passwordEl.textContent;
+      if (!pwd) return;
+      pwd = pwd.split('').sort(() => Math.random() - 0.5).join('');
+      updateUI(pwd);
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      const text = passwordEl.textContent;
+      if (!text) return alert("No password to download!");
+      const blob = new Blob([text], {type:"text/plain"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "password.txt";
+      a.click();
+    });
+
+    // Fix for Save button → behaves like Download
+    saveBtn.addEventListener('click', () => {
+      downloadBtn.click();
+    });
+
+    presets.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const len = parseInt(btn.dataset.len);
+        lengthEl.value = len;
+        lengthRange.value = len;
+      });
+    });
+
+    lengthEl.addEventListener('input', () => lengthRange.value = lengthEl.value);
+    lengthRange.addEventListener('input', () => lengthEl.value = lengthRange.value);
+  </script>
+</body>
+</html>
